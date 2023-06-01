@@ -1,76 +1,66 @@
 import streamlit as st
-import cv2
 import numpy as np
-import base64
+import cv2
 
 def grayscale_conversion(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    return gray
+    gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    return gray_image
 
-def black_white_conversion(image):
-    gray = grayscale_conversion(image)
-    _, bw = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-    return bw
+def black_and_white_conversion(image, threshold):
+    _, bw_image = cv2.threshold(image, threshold, 255, cv2.THRESH_BINARY)
+    return bw_image
 
-def gray_half_conversion(image):
-    gray = grayscale_conversion(image)
-    dither = cv2.resize(gray, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
-    return dither
-
-def gray_quarter_conversion(image):
-    gray = grayscale_conversion(image)
-    dither = cv2.resize(gray, None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
-    return dither
-
-def download_image(image, format):
-    encoded_image = base64.b64encode(image).decode()
-    href = f'<a href="data:image/{format};base64,{encoded_image}" download="converted_image.{format}">Download {format.upper()} Image</a>'
-    return href
+def resize_image(image, scale):
+    width = int(image.shape[1] * scale)
+    height = int(image.shape[0] * scale)
+    resized_image = cv2.resize(image, (width, height))
+    return resized_image
 
 def main():
-    st.title("Image Converter App")
-    st.write("Upload an image and select the conversion type.")
+    # Introduction
+    st.title("Image Conversion App")
+    st.write("Welcome to the Image Conversion App!")
+    st.write("This app allows you to perform various image conversions.")
 
-    uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png", "gif"])
+    # Image upload
+    uploaded_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
-        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-        image = cv2.imdecode(file_bytes, 1)
+        # Read the image
+        image = np.array(bytearray(uploaded_file.read()), dtype=np.uint8)
+        image = cv2.imdecode(image, cv2.IMREAD_COLOR)
 
-        st.subheader("Original Image")
-        st.image(image, channels="BGR")
+        # Conversion options
+        conversion_options = st.multiselect(
+            "Select conversion options",
+            ["Grayscale", "Black and White", "Resize to 1/2 Size", "Resize to 1/4 Size"]
+        )
 
-        if st.button("Convert to Grayscale"):
-            gray = grayscale_conversion(image)
+        if "Grayscale" in conversion_options:
+            grayscale_image = grayscale_conversion(image)
             st.subheader("Grayscale Image")
-            st.image(gray, cmap="gray")
+            st.image(grayscale_image, caption="Grayscale Image", use_column_width=True)
 
-            converted_image = cv2.imencode(".jpg", gray)[1].tobytes()
-            st.markdown(download_image(converted_image, "jpg"), unsafe_allow_html=True)
-
-        if st.button("Convert to Black and White"):
-            bw = black_white_conversion(image)
+        if "Black and White" in conversion_options:
+            threshold = st.slider("Threshold", 0, 255, 128)
+            bw_image = black_and_white_conversion(image, threshold)
             st.subheader("Black and White Image")
-            st.image(bw, cmap="gray")
+            st.image(bw_image, caption="Black and White Image", use_column_width=True)
 
-            converted_image = cv2.imencode(".jpg", bw)[1].tobytes()
-            st.markdown(download_image(converted_image, "jpg"), unsafe_allow_html=True)
+        if "Resize to 1/2 Size" in conversion_options:
+            if "Grayscale" not in conversion_options:
+                grayscale_image = grayscale_conversion(image)
+            half_size_image = resize_image(grayscale_image, 0.5)
+            st.subheader("Grayscale Image (1/2 Size)")
+            st.image(half_size_image, caption="Grayscale Image (1/2 Size)", use_column_width=True)
 
-        if st.button("Convert to Gray 1/2"):
-            half = gray_half_conversion(image)
-            st.subheader("Gray 1/2 Image")
-            st.image(half, cmap="gray")
-
-            converted_image = cv2.imencode(".jpg", half)[1].tobytes()
-            st.markdown(download_image(converted_image, "jpg"), unsafe_allow_html=True)
-
-        if st.button("Convert to Gray 1/4"):
-            quarter = gray_quarter_conversion(image)
-            st.subheader("Gray 1/4 Image")
-            st.image(quarter, cmap="gray")
-
-            converted_image = cv2.imencode(".jpg", quarter)[1].tobytes()
-            st.markdown(download_image(converted_image, "jpg"), unsafe_allow_html=True)
+        if "Resize to 1/4 Size" in conversion_options:
+            if "Grayscale" not in conversion_options:
+                grayscale_image = grayscale_conversion(image)
+            quarter_size_image = resize_image(grayscale_image, 0.25)
+            st.subheader("Grayscale Image (1/4 Size)")
+            st.image(quarter_size_image, caption="Grayscale Image (1/4 Size)", use_column_width=True)
 
 if __name__ == "__main__":
     main()
+
