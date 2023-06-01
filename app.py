@@ -1,7 +1,7 @@
 import streamlit as st
 import cv2
 import numpy as np
-import tempfile
+import base64
 
 def grayscale_conversion(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -23,9 +23,9 @@ def gray_quarter_conversion(image):
     return dither
 
 def download_image(image, format):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{format}') as temp:
-        temp.write(image)
-        return temp.name
+    encoded_image = base64.b64encode(image).decode()
+    href = f'<a href="data:image/{format};base64,{encoded_image}" download="converted_image.{format}">Download {format.upper()} Image</a>'
+    return href
 
 def main():
     st.title("Image Converter App")
@@ -46,8 +46,7 @@ def main():
             st.image(gray, cmap="gray")
 
             converted_image = cv2.imencode(".jpg", gray)[1].tobytes()
-            download_link = download_image(converted_image, "jpg")
-            st.download_button("Download Grayscale Image", download_link)
+            st.markdown(download_image(converted_image, "jpg"), unsafe_allow_html=True)
 
         if st.button("Convert to Black and White"):
             bw = black_white_conversion(image)
@@ -55,8 +54,7 @@ def main():
             st.image(bw, cmap="gray")
 
             converted_image = cv2.imencode(".jpg", bw)[1].tobytes()
-            download_link = download_image(converted_image, "jpg")
-            st.download_button("Download Black and White Image", download_link)
+            st.markdown(download_image(converted_image, "jpg"), unsafe_allow_html=True)
 
         if st.button("Convert to Gray 1/2"):
             half = gray_half_conversion(image)
@@ -64,8 +62,7 @@ def main():
             st.image(half, cmap="gray")
 
             converted_image = cv2.imencode(".jpg", half)[1].tobytes()
-            download_link = download_image(converted_image, "jpg")
-            st.download_button("Download Gray 1/2 Image", download_link)
+            st.markdown(download_image(converted_image, "jpg"), unsafe_allow_html=True)
 
         if st.button("Convert to Gray 1/4"):
             quarter = gray_quarter_conversion(image)
@@ -73,8 +70,7 @@ def main():
             st.image(quarter, cmap="gray")
 
             converted_image = cv2.imencode(".jpg", quarter)[1].tobytes()
-            download_link = download_image(converted_image, "jpg")
-            st.download_button("Download Gray 1/4 Image", download_link)
+            st.markdown(download_image(converted_image, "jpg"), unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
